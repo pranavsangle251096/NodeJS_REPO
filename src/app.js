@@ -24,17 +24,12 @@ const User = require("./models/user");
 // }); // Anything after /hello/anything will print the same response from /hello route handler
 
 //order of writing routes is important as code executes from top to bottom and it will take the matching wildcard route and print the same response if the next route has the same wildcard route present in it
-
+app.use(express.json()); // middleware to convert all requests to json
 app.post("/signup" , async (req,res) => {
-    const userObj = {
-        firstName : "Virat",
-        lastName : "Kohli",
-        emailId : "virat@kohli.com",
-        password : "Pranav@2510",
-    }
+
 
     //create a new instance of User Model
-    const user = new User(userObj);
+    const user = new User(req.body); // req.body is to dynamically pass json object
 
     await user.save().then(()=>{
         res.send("Data Saved Successfully")
@@ -42,7 +37,20 @@ app.post("/signup" , async (req,res) => {
         res.send("Data not saved");
     });
 
+
+
 });
+
+//Feed API to get all the Users from the DB
+app.get("/feed" , async (req,res) => {
+    try{
+       const fetchedData =  await User.find({});
+        res.status(200).send(fetchedData);
+    }catch(err){
+        res.status(400).send("No Documents found");
+    }
+    
+})
 
 
 
