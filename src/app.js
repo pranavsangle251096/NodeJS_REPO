@@ -30,14 +30,14 @@ app.post("/signup" , async (req,res) => {
 
     //create a new instance of User Model
     const user = new User(req.body); // req.body is to dynamically pass json object
-
-    await user.save().then(()=>{
-        res.send("Data Saved Successfully")
-    }).catch((err)=>{
-        res.send("Data not saved");
-    });
-
-
+    const newUser = req.body;
+    try{
+        //await user.save();
+        await User.create(newUser);
+        res.status(201).send("User created successfully");
+    }catch(err){
+        res.status(400).send(err.message);
+    }
 
 });
 
@@ -80,10 +80,12 @@ app.patch("/user" , async(req,res) =>{
     const updatedData = req.body;
 
     try{
-        await User.findByIdAndUpdate({ _id : userId} , updatedData);
+        await User.findByIdAndUpdate({ _id : userId} , updatedData , {
+            runValidators : true
+        });
         res.status(201).send("User updated Successfully");
     }catch(err){
-        res.status(400).send("Something went wrong");
+        res.status(400).send("Update Failed : " + err.message);
     }
 })
 
