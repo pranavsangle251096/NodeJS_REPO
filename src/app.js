@@ -50,12 +50,56 @@ app.get("/feed" , async (req,res) => {
         res.status(400).send("No Documents found");
     }
     
+});
+
+app.get("/feed1" , async(req,res)=>{
+    const userEmail = req.body.emailId;
+    try{
+        const fetchSingleDocument = await User.findOne({emailId : userEmail}).exec();
+        res.status(200).send(fetchSingleDocument);
+    }catch(err){
+        res.status(400).send("No Document Found");
+    }
+});
+
+//delete API
+
+app.delete("/user" , async(req,res) =>{
+    const userId = req.body._id;
+    try{
+        const deleteUser = await User.findOneAndDelete(userId);
+        res.status(201).send("User Deleted Successfully");
+    }catch(err){
+        res.status(400).send("Something went wrong");
+    }
+});
+
+// Update API
+app.patch("/user" , async(req,res) =>{
+    const userId = req.body.userId;
+    const updatedData = req.body;
+
+    try{
+        await User.findByIdAndUpdate({ _id : userId} , updatedData);
+        res.status(201).send("User updated Successfully");
+    }catch(err){
+        res.status(400).send("Something went wrong");
+    }
 })
 
+//update API using email ID
 
+app.patch("/usere" , async(req,res) =>{
+    const emailid = req.body.emailId;
+    const data = req.body;
 
-
-
+    try{
+        await User.findOneAndUpdate({emailId : emailid} , data);
+        res.status(201).send("User updated successfully using Email ID");
+    }catch(err){
+        res.status(400).send("Something went wrong");
+    }
+});
 
 
 
