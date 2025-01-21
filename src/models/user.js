@@ -15,6 +15,8 @@ const userSchema = new mongoose.Schema({
         lowercase: true,
         required: true,
         unique: true,
+        trim: true,
+        match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ // As an alternative , we can also use validator library
     },
     password : {
         type : String,
@@ -45,6 +47,9 @@ const userSchema = new mongoose.Schema({
         type : [String]
     }
 
+},
+{
+    timestamps : true
 });
 
 const User = mongoose.model("User" , userSchema);

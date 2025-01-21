@@ -2,6 +2,8 @@ const express = require("express");
 const connectDB = require("./config/database");
 const app = express(); //This is an instance expressjs application
 const User = require("./models/user");
+const { validateSignUpData } = require("./utils/validation");
+const bcrypt = require("bcrypt");
 
 //app.get will strictly handle only GET HTTP Calls
 // app.get("/user/:userid", (req,res) =>{
@@ -26,19 +28,52 @@ const User = require("./models/user");
 //order of writing routes is important as code executes from top to bottom and it will take the matching wildcard route and print the same response if the next route has the same wildcard route present in it
 app.use(express.json()); // middleware to convert all requests to json
 app.post("/signup" , async (req,res) => {
-
-
-    //create a new instance of User Model
-    const user = new User(req.body); // req.body is to dynamically pass json object
-    const newUser = req.body;
+    // Validation of data and then save to DB
     try{
-        //await user.save();
-        await User.create(newUser);
+        validateSignUpData(req);
+    //Encrypting the Password
+    const { firstName,lastName,emailId,password } = req.body;
+    const passwordHashed = await bcrypt.hash(password,10);
+    //create a new instance of User Model
+    const user = new User({
+        firstName,
+        lastName,
+        emailId,
+        password : passwordHashed
+    });
+
+        await user.save();
+        //await User.create(newUser);
         res.status(201).send("User created successfully");
     }catch(err){
-        res.status(400).send(err.message);
+        res.status(400).send("ERROR : " + err.message);
     }
 
+});
+
+//Login API
+app.post("/login" , async(req,res) =>{
+    //Get the Email ID and PAssword
+    try{
+
+        const { emailId , password } = req.body;
+        const user = await User.findOne({emailId : emailId});
+        if(!user){
+            throw new Error("Invalid Credentials..");
+        }
+    
+        const isPasswordValid = await bcrypt.compare(password , user.password)
+        if(isPasswordValid){
+            res.send("Login Successfull...");
+        }
+        else{
+            throw new Error("Invalid Credentials..");
+        }
+
+    }catch(err){
+        res.status(400).send("Error : " + err.message);
+    }
+ 
 });
 
 //Feed API to get all the Users from the DB
@@ -75,11 +110,26 @@ app.delete("/user" , async(req,res) =>{
 });
 
 // Update API
-app.patch("/user" , async(req,res) =>{
-    const userId = req.body.userId;
+app.patch("/user/:userId" , async(req,res) =>{
+    const userId = req.params?.userId;
     const updatedData = req.body;
 
+
+
     try{
+
+        const ALLOWED_UPDATES = [ "about" ,"skills" , "gender" , "age"];
+
+        const isUpdateAllowed = Object.keys(updatedData).every((k)=> ALLOWED_UPDATES.includes(k));
+    
+        if(!isUpdateAllowed){
+            throw new Error("Update not Allowed");
+        }
+
+        if(updatedData?.skills.length > 3){
+            throw new Error("Skills cannot exceed more than 3");
+        }
+
         await User.findByIdAndUpdate({ _id : userId} , updatedData , {
             runValidators : true
         });
