@@ -4,6 +4,8 @@ const app = express(); //This is an instance expressjs application
 const User = require("./models/user");
 const { validateSignUpData } = require("./utils/validation");
 const bcrypt = require("bcrypt");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 
 //app.get will strictly handle only GET HTTP Calls
 // app.get("/user/:userid", (req,res) =>{
@@ -27,6 +29,8 @@ const bcrypt = require("bcrypt");
 
 //order of writing routes is important as code executes from top to bottom and it will take the matching wildcard route and print the same response if the next route has the same wildcard route present in it
 app.use(express.json()); // middleware to convert all requests to json
+app.use(cookieParser()); // middleware to parse cookies
+
 app.post("/signup" , async (req,res) => {
     // Validation of data and then save to DB
     try{
@@ -64,6 +68,11 @@ app.post("/login" , async(req,res) =>{
     
         const isPasswordValid = await bcrypt.compare(password , user.password)
         if(isPasswordValid){
+            //Create a JWT Token
+            const token = await jwt.sign({ _id : user._id } , "DevTinder@251096_$")
+
+            //Add the Token to a Cookie and then send it back to the user/Client.
+            res.cookie("token" , token); // It adds the JWT Token inside a Cookie
             res.send("Login Successfull...");
         }
         else{
@@ -74,6 +83,35 @@ app.post("/login" , async(req,res) =>{
         res.status(400).send("Error : " + err.message);
     }
  
+});
+
+//Profile API to receive Cookie from Client to server
+app.get("/profile" , async(req,res) =>{
+
+    try{
+        const { token } = req.cookies;
+        if(!token){
+            throw new Error("Invalid Token");
+        }
+    
+    //Validate Token
+    const decodedMessage = await jwt.verify(token , "DevTinder@251096_$");
+
+    const { _id } = decodedMessage;
+    const loggedUser = await User.findById({_id : _id});
+    if(!loggedUser){
+        throw new Error("Please Login again");
+    }
+    console.log("Logged in User is : " + loggedUser.firstName + " " + loggedUser.lastName);
+
+    console.log(req.cookies);
+    res.send("Reading Cookie");
+
+    }catch(err){
+        res.status(400).send("ERROR :" + err.message);
+    }
+    
+
 });
 
 //Feed API to get all the Users from the DB
