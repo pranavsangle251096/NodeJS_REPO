@@ -6,6 +6,7 @@ const { validateSignUpData } = require("./utils/validation");
 const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
+const {userAuth} = require("./middlewares/auth");
 
 //app.get will strictly handle only GET HTTP Calls
 // app.get("/user/:userid", (req,res) =>{
@@ -86,26 +87,18 @@ app.post("/login" , async(req,res) =>{
 });
 
 //Profile API to receive Cookie from Client to server
-app.get("/profile" , async(req,res) =>{
+app.get("/profile" , userAuth , async(req,res) =>{
 
     try{
-        const { token } = req.cookies;
-        if(!token){
-            throw new Error("Invalid Token");
-        }
-    
-    //Validate Token
-    const decodedMessage = await jwt.verify(token , "DevTinder@251096_$");
 
-    const { _id } = decodedMessage;
-    const loggedUser = await User.findById({_id : _id});
+    const loggedUser = req.user;
     if(!loggedUser){
         throw new Error("Please Login again");
     }
     console.log("Logged in User is : " + loggedUser.firstName + " " + loggedUser.lastName);
 
     console.log(req.cookies);
-    res.send("Reading Cookie");
+    res.send("User Data" + loggedUser);
 
     }catch(err){
         res.status(400).send("ERROR :" + err.message);
